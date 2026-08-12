@@ -115,7 +115,10 @@ end
 local function EnsureOverlay(mover)
     local overlay = mover.LafeeFrameGroupOverlay
     if not overlay then
-        overlay = mover:CreateTexture(nil, "OVERLAY", nil, 6)
+        -- ElvUI movers now use more overlay layers themselves.  Keep our
+        -- markers in low, valid sublevels so a full mover does not abort the
+        -- whole discovery pass.
+        overlay = mover:CreateTexture(nil, "OVERLAY", nil, 1)
         overlay:SetAllPoints(mover)
         overlay:SetColorTexture(unpack(RED))
         overlay:Hide()
@@ -123,7 +126,7 @@ local function EnsureOverlay(mover)
     end
 
     if not mover.LafeeFrameGroupSelectedOverlay then
-        local selectedOverlay = mover:CreateTexture(nil, "OVERLAY", nil, 7)
+        local selectedOverlay = mover:CreateTexture(nil, "OVERLAY", nil, 2)
         selectedOverlay:SetAllPoints(mover)
         selectedOverlay:SetColorTexture(unpack(SELECTED))
         selectedOverlay:Hide()
@@ -143,10 +146,13 @@ local function RefreshHighlights()
             overlay:Hide()
         end
 
-        if groupId and groupId == selectedGroupId then
-            mover.LafeeFrameGroupSelectedOverlay:Show()
-        else
-            mover.LafeeFrameGroupSelectedOverlay:Hide()
+        local selectedOverlay = mover.LafeeFrameGroupSelectedOverlay
+        if selectedOverlay then
+            if groupId and groupId == selectedGroupId then
+                selectedOverlay:Show()
+            else
+                selectedOverlay:Hide()
+            end
         end
     end
 end
@@ -186,18 +192,10 @@ local function SaveGroupPositions(groupId)
 end
 
 local function ApplySavedPositions()
-    if not database then
-        return
-    end
-
-    for moverName, position in pairs(database.positions) do
-        if FindGroupId(moverName) then
-            local mover = movers[moverName]
-            if mover and position.left and position.bottom then
-                PlaceMover(mover, position.left, position.bottom)
-            end
-        end
-    end
+    -- Since ElvUI 15, movers can be protected after its profile update.
+    -- Restoring positions here via ClearAllPoints taints that protected path.
+    -- ElvUI already restores its own mover positions, so groups only need to
+    -- retain their membership and follow a drag while Move UI is open.
 end
 
 local function SyncElvUIProfile()
@@ -506,6 +504,9 @@ local function InstallProfileIntegration()
 
     local profileDatabase = engine.data
     if profileDatabase and profileDatabase.RegisterCallback then
+        -- AceDB exposes its callbacks directly on the database object.  Its
+        -- RegisterCallback signature here is (eventName, callback), unlike
+        -- CallbackHandler's standalone registration API.
         profileDatabase:RegisterCallback("OnProfileChanged", QueueProfileSync)
         profileDatabase:RegisterCallback("OnProfileCopied", QueueProfileSync)
         profileDatabase:RegisterCallback("OnProfileReset", QueueProfileSync)
@@ -516,6 +517,23 @@ local function InstallProfileIntegration()
     end
 
     controller.profileIntegrationInstalled = true
+end
+
+local function RegisterElvUIPlugin()
+    if controller.elvUIPluginRegistered then
+        return
+    end
+
+    local elvUI = _G.ElvUI
+    local engine = elvUI and elvUI[1]
+    local plugins = engine and engine.Libs and engine.Libs.EP
+    if not plugins or type(plugins.RegisterPlugin) ~= "function" then
+        return
+    end
+
+    local version = C_AddOns and C_AddOns.GetAddOnMetadata and C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version")
+    plugins:RegisterPlugin(ADDON_NAME, nil, false, version)
+    controller.elvUIPluginRegistered = true
 end
 
 local groupPanel
@@ -955,6 +973,7 @@ controller:SetScript("OnEvent", function(_, event)
         CreateMinimapButton()
         InstallMoveUIIntegration()
         InstallProfileIntegration()
+        RegisterElvUIPlugin()
         QueueDiscovery()
         C_Timer.After(1, function()
             if DiscoverMovers() then
