@@ -2,8 +2,9 @@
 ## Title: Lafee ElvUI Frame Group
 ## Notes: Link ElvUI movers so they can be moved together.
 ## Author: Lafee
-## Version: 1.1.4
+## Version: 1.1.5
 ## RequiredDeps: ElvUI
 ## SavedVariables: LafeeElvUIFrameGroupDB
 
 lafee_elvui_frame_group.lua
+MoverPersistence.lua
