@@ -1,5 +1,6 @@
 local ADDON_NAME = ...
 local DISPLAY_NAME = "Lafee ElvUI Frame Group"
+local L = _G.LafeeElvUIFrameGroupLocale or {}
 
 local controller = CreateFrame("Frame")
 local rootDatabase
@@ -98,7 +99,7 @@ local function GetGroupName(groupId)
     if group and type(group.name) == "string" and group.name ~= "" then
         return group.name
     end
-    return "Groupe " .. tostring(groupId)
+    return (L.GROUP_PREFIX or "Group ") .. tostring(groupId)
 end
 
 local function FindGroupId(moverName)
@@ -225,7 +226,7 @@ end
 local function CreateGroup()
     local groupId = tostring(database.nextGroupId)
     database.nextGroupId = database.nextGroupId + 1
-    database.groups[groupId] = { movers = {}, name = "Groupe " .. groupId }
+    database.groups[groupId] = { movers = {}, name = (L.GROUP_PREFIX or "Group ") .. groupId }
     selectedGroupId = groupId
     return groupId
 end
@@ -236,7 +237,7 @@ local function SelectMover(moverName)
         selectedGroupId = currentGroupId
         RefreshHighlights()
         RefreshGroupPanel()
-        Print(GetGroupName(currentGroupId) .. " sélectionné (" .. CountMembers(GetGroup(currentGroupId)) .. " cadres).")
+        Print(string.format(L.GROUP_SELECTED, GetGroupName(currentGroupId), CountMembers(GetGroup(currentGroupId))))
         return
     end
 
@@ -249,7 +250,7 @@ local function SelectMover(moverName)
     group.movers[moverName] = true
     RefreshHighlights()
     RefreshGroupPanel()
-    Print("Cadre ajouté à « " .. GetGroupName(selectedGroupId) .. " ».")
+    Print(string.format(L.FRAME_ADDED, GetGroupName(selectedGroupId)))
 end
 
 local function RemoveMover(moverName)
@@ -271,7 +272,7 @@ local function RemoveMover(moverName)
 
     RefreshHighlights()
     RefreshGroupPanel()
-    Print("Cadre retiré de « " .. GetGroupName(groupId) .. " ».")
+    Print(string.format(L.FRAME_REMOVED, GetGroupName(groupId)))
 end
 
 local function UpdateLinkedMovers()
@@ -648,7 +649,7 @@ local function SaveActiveGroupName()
     end
 
     local name = groupNameBox:GetText():match("^%s*(.-)%s*$")
-    group.name = name ~= "" and name:sub(1, 32) or "Groupe " .. selectedGroupId
+    group.name = name ~= "" and name:sub(1, 32) or (L.GROUP_PREFIX or "Group ") .. selectedGroupId
     RefreshGroupPanel()
 end
 
@@ -713,23 +714,23 @@ local function CreateGroupPanel()
     title:SetPoint("TOP", 0, -13)
     title:SetWidth(340)
     title:SetJustifyH("CENTER")
-    title:SetText("Groupes de cadres ElvUI")
+    title:SetText(L.PANEL_TITLE)
 
     local profile = groupPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     profile:SetPoint("TOP", title, "BOTTOM", 0, -4)
     profile:SetWidth(340)
     profile:SetJustifyH("CENTER")
-    profile:SetText("Profil ElvUI actif")
+    profile:SetText(L.PROFILE_ACTIVE)
     groupPanel.profileText = profile
 
     local groupLabel = groupPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     groupLabel:SetPoint("TOPLEFT", 18, -57)
-    groupLabel:SetText("Groupe actif")
+    groupLabel:SetText(L.ACTIVE_GROUP)
 
     groupDropdown = CreateFrame("Button", nil, groupPanel, "UIPanelButtonTemplate")
     groupDropdown:SetSize(240, 22)
     groupDropdown:SetPoint("TOPLEFT", groupLabel, "BOTTOMLEFT", 3, -5)
-    groupDropdown:SetText("Choisir un groupe")
+    groupDropdown:SetText(L.CHOOSE_GROUP)
     groupDropdown:SetScript("OnClick", ToggleGroupDropdown)
     ApplyElvUIButtonSkin(groupDropdown)
 
@@ -753,7 +754,7 @@ local function CreateGroupPanel()
     local newButton = CreateFrame("Button", nil, groupPanel, "UIPanelButtonTemplate")
     newButton:SetSize(86, 22)
     newButton:SetPoint("TOPRIGHT", groupPanel, "TOPRIGHT", -18, -78)
-    newButton:SetText("Nouveau")
+    newButton:SetText(L.NEW)
     newButton:SetScript("OnClick", function()
         CreateGroup()
         RefreshGroupPanel()
@@ -762,7 +763,7 @@ local function CreateGroupPanel()
 
     local nameLabel = groupPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     nameLabel:SetPoint("TOPLEFT", groupLabel, "BOTTOMLEFT", 0, -51)
-    nameLabel:SetText("Nom")
+    nameLabel:SetText(L.NAME)
 
     groupNameBox = CreateFrame("EditBox", nil, groupPanel, "InputBoxTemplate")
     groupNameBox:SetSize(265, 22)
@@ -781,7 +782,7 @@ local function CreateGroupPanel()
     local saveButton = CreateFrame("Button", nil, groupPanel, "UIPanelButtonTemplate")
     saveButton:SetSize(70, 22)
     saveButton:SetPoint("TOPRIGHT", groupPanel, "TOPRIGHT", -18, -146)
-    saveButton:SetText("Valider")
+    saveButton:SetText(L.SAVE)
     saveButton:SetScript("OnClick", SaveActiveGroupName)
     groupPanel.saveButton = saveButton
     ApplyElvUIButtonSkin(saveButton)
@@ -789,7 +790,7 @@ local function CreateGroupPanel()
     local deleteButton = CreateFrame("Button", nil, groupPanel, "UIPanelButtonTemplate")
     deleteButton:SetSize(92, 22)
     deleteButton:SetPoint("TOPRIGHT", groupPanel, "TOPRIGHT", -18, -176)
-    deleteButton:SetText("Supprimer")
+    deleteButton:SetText(L.DELETE)
     deleteButton:SetScript("OnClick", function()
         local group = GetGroup(selectedGroupId)
         if not group then
@@ -812,14 +813,14 @@ local function CreateGroupPanel()
 
     local helpTitle = groupPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     helpTitle:SetPoint("TOPLEFT", groupCountText, "BOTTOMLEFT", 0, -14)
-    helpTitle:SetText("Commandes et raccourcis")
+    helpTitle:SetText(L.HELP_TITLE)
 
     local help = groupPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     help:SetPoint("TOPLEFT", helpTitle, "BOTTOMLEFT", 0, -6)
     help:SetWidth(340)
     help:SetJustifyH("LEFT")
     help:SetJustifyV("TOP")
-    help:SetText("/moveui : ouvre ou ferme ce mode\nListe déroulante : choisir le groupe actif\nMaj-clic gauche : ajoute un cadre ou sélectionne son groupe\nMaj-clic droit : retire un cadre du groupe\nGlisser un cadre rouge : déplace tout son groupe\n/lfg new : crée un groupe  •  /lfg clear : supprime le groupe actif\nÉchap : ferme le panneau  •  Glisser l’en-tête : déplace le panneau")
+    help:SetText(L.HELP_TEXT)
 
     groupPanel:Hide()
     groupPanel:HookScript("OnHide", function()
@@ -834,7 +835,7 @@ RefreshGroupPanel = function()
         return
     end
 
-    groupPanel.profileText:SetText("Profil ElvUI : " .. activeProfileName)
+    groupPanel.profileText:SetText(string.format(L.PROFILE_LABEL, activeProfileName))
     local group = GetGroup(selectedGroupId)
     if group then
         groupDropdown:SetText(GetGroupName(selectedGroupId))
@@ -842,14 +843,14 @@ RefreshGroupPanel = function()
         groupNameBox:Enable()
         groupPanel.saveButton:Enable()
         groupPanel.deleteButton:Enable()
-        groupCountText:SetText(CountMembers(group) .. " cadre(s) lié(s)")
+        groupCountText:SetText(string.format(L.LINKED_FRAMES, CountMembers(group)))
     else
-        groupDropdown:SetText("Choisir un groupe")
+        groupDropdown:SetText(L.CHOOSE_GROUP)
         groupNameBox:SetText("")
         groupNameBox:Disable()
         groupPanel.saveButton:Disable()
         groupPanel.deleteButton:Disable()
-        groupCountText:SetText("Créez ou sélectionnez un groupe.")
+        groupCountText:SetText(L.CREATE_OR_SELECT)
     end
 
     if groupDropdownList and groupDropdownList:IsShown() then
@@ -930,8 +931,8 @@ local function CreateMinimapButton()
     minimapButton:SetScript("OnEnter", function(button)
         GameTooltip:SetOwner(button, "ANCHOR_LEFT")
         GameTooltip:AddLine(DISPLAY_NAME)
-        GameTooltip:AddLine("Clic gauche : ouvrir / fermer les movers et le panneau.", 1, 1, 1, true)
-        GameTooltip:AddLine("Glisser : déplacer ce bouton.", 1, 1, 1, true)
+        GameTooltip:AddLine(L.MINIMAP_OPEN, 1, 1, 1, true)
+        GameTooltip:AddLine(L.MINIMAP_DRAG, 1, 1, 1, true)
         GameTooltip:Show()
     end)
     minimapButton:SetScript("OnLeave", GameTooltip_Hide)
@@ -946,7 +947,7 @@ SlashCmdList.LAFEEELVUIGROUP = function(message)
     if message == "new" then
         CreateGroup()
         RefreshGroupPanel()
-        Print("Nouveau groupe créé : nommez-le puis ajoutez ses cadres avec Maj-clic gauche.")
+        Print(L.NEW_GROUP_CREATED)
     elseif message == "clear" then
         if selectedGroupId and GetGroup(selectedGroupId) then
             for moverName in pairs(GetGroup(selectedGroupId).movers) do
@@ -956,12 +957,12 @@ SlashCmdList.LAFEEELVUIGROUP = function(message)
             selectedGroupId = nil
             RefreshHighlights()
             RefreshGroupPanel()
-            Print("Groupe actif supprimé.")
+            Print(L.ACTIVE_GROUP_DELETED)
         else
-            Print("Aucun groupe actif à supprimer.")
+            Print(L.NO_ACTIVE_GROUP)
         end
     else
-        Print("/moveui : ouvre les movers ElvUI. Maj-clic gauche ajoute ou sélectionne un groupe ; Maj-clic droit retire un cadre. /lfg new : prépare un autre groupe.")
+        Print(L.SLASH_HELP)
     end
 end
 
