@@ -1,4 +1,5 @@
 local ADDON_NAME = ...
+local DISPLAY_NAME = "Lafee ElvUI Frame Group"
 
 local controller = CreateFrame("Frame")
 local rootDatabase
@@ -16,7 +17,7 @@ local RED = { 0.95, 0.10, 0.10, 0.42 }
 local SELECTED = { 1.00, 0.72, 0.05, 0.28 }
 
 local function Print(message)
-    DEFAULT_CHAT_FRAME:AddMessage("|cffff4040" .. ADDON_NAME .. "|r: " .. message)
+    DEFAULT_CHAT_FRAME:AddMessage("|cffff4040" .. DISPLAY_NAME .. "|r: " .. message)
 end
 
 local function GetElvUIProfileName()
@@ -928,7 +929,7 @@ local function CreateMinimapButton()
     end)
     minimapButton:SetScript("OnEnter", function(button)
         GameTooltip:SetOwner(button, "ANCHOR_LEFT")
-        GameTooltip:AddLine(ADDON_NAME)
+        GameTooltip:AddLine(DISPLAY_NAME)
         GameTooltip:AddLine("Clic gauche : ouvrir / fermer les movers et le panneau.", 1, 1, 1, true)
         GameTooltip:AddLine("Glisser : déplacer ce bouton.", 1, 1, 1, true)
         GameTooltip:Show()
