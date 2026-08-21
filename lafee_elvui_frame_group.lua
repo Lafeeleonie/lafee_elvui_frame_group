@@ -1,6 +1,10 @@
 local ADDON_NAME, ns = ...
 local DISPLAY_NAME = "Lafee ElvUI Frame Group"
+local MINIMAP_BROKER_NAME = "Lafee ElvUI Frame Group"
+local MINIMAP_ICON = "Interface\\Icons\\INV_Misc_GroupLooking"
 local L = (ns and ns.L) or _G.LafeeElvUIFrameGroupL or setmetatable({}, { __index = function(_, key) return key end })
+local LDB = LibStub("LibDataBroker-1.1")
+local DBIcon = LibStub("LibDBIcon-1.0")
 
 local controller = CreateFrame("Frame")
 local rootDatabase
@@ -51,6 +55,14 @@ local function GetDatabase()
     end
 
     rootDatabase = LafeeElvUIFrameGroupDB
+    rootDatabase.minimap = type(rootDatabase.minimap) == "table" and rootDatabase.minimap or {}
+    if rootDatabase.minimap.hide == nil then
+        rootDatabase.minimap.hide = false
+    end
+    if tonumber(rootDatabase.minimap.minimapPos) == nil then
+        local legacyAngle = tonumber(rootDatabase.minimapButtonAngle)
+        rootDatabase.minimap.minimapPos = legacyAngle and (math.deg(legacyAngle) % 360) or (math.deg(-1.25) % 360)
+    end
     if type(rootDatabase.profiles) ~= "table" and (type(rootDatabase.groups) == "table" or type(rootDatabase.positions) == "table") then
         rootDatabase.profiles = {
             [GetElvUIProfileName()] = {
@@ -523,7 +535,7 @@ local groupDropdownList
 local groupDropdownRows = {}
 local groupNameBox
 local groupCountText
-local minimapButton
+local minimapDataObject
 
 local function ApplyElvUIButtonSkin(button)
     local elvUI = _G.ElvUI
@@ -843,68 +855,28 @@ UpdateGroupPanelVisibility = function()
     end
 end
 
-local function PositionMinimapButton()
-    if not minimapButton or not rootDatabase then
-        return
-    end
-    local angle = rootDatabase.minimapButtonAngle or -1.25
-    local radius = (Minimap:GetWidth() * 0.5) + 5
-    minimapButton:ClearAllPoints()
-    minimapButton:SetPoint("CENTER", Minimap, "CENTER", math.cos(angle) * radius, math.sin(angle) * radius)
-end
-
-local function UpdateMinimapButtonFromCursor()
-    local cursorX, cursorY = GetCursorPosition()
-    local scale = Minimap:GetEffectiveScale()
-    local centerX, centerY = Minimap:GetCenter()
-    rootDatabase.minimapButtonAngle = math.atan2((cursorY / scale) - centerY, (cursorX / scale) - centerX)
-    PositionMinimapButton()
-end
-
 local function CreateMinimapButton()
-    if minimapButton then
-        return
-    end
-
-    minimapButton = CreateFrame("Button", "LafeeElvUIFrameGroupMinimapButton", Minimap)
-    minimapButton:SetSize(32, 32)
-    minimapButton:SetFrameStrata("MEDIUM")
-
-    local icon = minimapButton:CreateTexture(nil, "ARTWORK", nil, 1)
-    icon:SetSize(22, 22)
-    icon:SetPoint("CENTER")
-    icon:SetTexture("Interface\\Icons\\INV_Misc_GroupLooking")
-    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    minimapButton.icon = icon
-
-    minimapButton:RegisterForDrag("LeftButton")
-    minimapButton:SetScript("OnDragStart", function(button)
-        button.isDragging = true
-        button:SetScript("OnUpdate", UpdateMinimapButtonFromCursor)
-    end)
-    minimapButton:SetScript("OnDragStop", function(button)
-        button:SetScript("OnUpdate", nil)
-        UpdateMinimapButtonFromCursor()
-        C_Timer.After(0, function() button.isDragging = nil end)
-    end)
-    minimapButton:SetScript("OnClick", function(_, button)
-        if button == "LeftButton" and not minimapButton.isDragging then
+    minimapDataObject = minimapDataObject or LDB:NewDataObject(MINIMAP_BROKER_NAME, {
+        type = "launcher",
+        text = DISPLAY_NAME,
+        icon = MINIMAP_ICON,
+        OnClick = function(_, button)
+            if button ~= "LeftButton" then return end
             local elvUI = _G.ElvUI
             local engine = elvUI and elvUI[1]
             if engine and type(engine.ToggleMoveMode) == "function" then
                 engine:ToggleMoveMode()
             end
-        end
-    end)
-    minimapButton:SetScript("OnEnter", function(button)
-        GameTooltip:SetOwner(button, "ANCHOR_LEFT")
-        GameTooltip:AddLine(DISPLAY_NAME)
-        GameTooltip:AddLine(L.TOOLTIP_OPEN, 1, 1, 1, true)
-        GameTooltip:AddLine(L.TOOLTIP_DRAG, 1, 1, 1, true)
-        GameTooltip:Show()
-    end)
-    minimapButton:SetScript("OnLeave", GameTooltip_Hide)
-    PositionMinimapButton()
+        end,
+        OnTooltipShow = function(tooltip)
+            tooltip:AddLine(DISPLAY_NAME)
+            tooltip:AddLine(L.TOOLTIP_OPEN, 1, 1, 1, true)
+            tooltip:AddLine(L.TOOLTIP_DRAG, 1, 1, 1, true)
+        end,
+    })
+    if not DBIcon:IsRegistered(MINIMAP_BROKER_NAME) then
+        DBIcon:Register(MINIMAP_BROKER_NAME, minimapDataObject, rootDatabase.minimap)
+    end
 end
 
 SLASH_LAFEEELVUIGROUP1 = "/lfg"

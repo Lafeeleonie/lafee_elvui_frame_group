@@ -12,8 +12,8 @@ The addon uses ElvUI's public mover system and does not modify any ElvUI files.
 - Automatically opens its group panel with ElvUI mover mode, whether mover mode is opened from the ElvUI datatext, `/moveui`, the ElvUI options, or the addon's minimap button.
 - Stores groups and positions separately for each ElvUI profile.
 - Reapplies saved grouped positions after login, reload, and profile changes.
-- Includes a movable minimap launcher.
-- Does not use any additional libraries.
+- Includes a movable LibDataBroker/LibDBIcon minimap launcher.
+- Bundles its minimap libraries and does not rely on another addon to provide them.
 
 ## Requirements and compatibility
 

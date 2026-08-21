@@ -6,6 +6,7 @@
 ## RequiredDeps: ElvUI
 ## SavedVariables: LafeeElvUIFrameGroupDB
 
+Libraries/Init.xml
 Localization.lua
 lafee_elvui_frame_group.lua
 MoverPersistence.lua
